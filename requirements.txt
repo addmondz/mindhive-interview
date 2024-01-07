@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+pymysql
+requests
+beautifulsoup4
+geopy
+Werkzeug
+SQLAlchemy
+flask_sqlalchemy
+python-dotenv
