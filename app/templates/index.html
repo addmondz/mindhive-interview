@@ -231,7 +231,7 @@
         }).addTo(map);
 
         let outletsData = [];
-        const outletMarkers = {};
+        const markers = [];
 
         const getOutlets = () => {
             fetch('/outlets')
@@ -248,9 +248,7 @@
             outlets.forEach(outlet => {
                 const marker = L.marker([outlet.latitude, outlet.longitude]).addTo(map);
                 marker.bindPopup(`<b>${outlet.name}</b><br>${outlet.address}`);
-
-                // Store the marker in the global object
-                outletMarkers[outlet.id] = marker;
+                markers.push(marker);
 
                 L.circle([outlet.latitude, outlet.longitude], {
                     color: 'red',
@@ -264,26 +262,48 @@
         const addOutletsToCarousel = (outlets) => {
             const outletCarousel = document.getElementById("outletCarousel");
 
-            // Clear the carousel content and reinitialize if needed
+            // Destroy the existing carousel if it's already initialized
+            if ($(outletCarousel).hasClass('slick-initialized')) {
+                $(outletCarousel).slick('unslick');
+            }
+
+            // Clear the carousel content
             outletCarousel.innerHTML = '';
+
+            // Add new outlets to the carousel
             outlets.forEach(outlet => {
                 const outletBox = document.createElement("div");
                 outletBox.className = "outlet";
                 outletBox.id = outlet.id;
                 outletBox.innerHTML = `<div class="inner"><b class="outlet-name">${outlet.name}</b><br><span class="outlet-address">${outlet.address}</span></div>`;
-                outletBox.addEventListener("click", () => selectOutlet(outlet.id));
+                outletBox.addEventListener("click", () => selectOutlet(outlet, outletBox));
                 outletCarousel.appendChild(outletBox);
             });
+
+            // Reinitialize the carousel
             initializeCarousel(outletCarousel);
         };
 
-        const selectOutlet = (outletId) => {
-            const marker = outletMarkers[outletId];
+        const selectOutlet = (outlet, outletBox) => {
+            document.querySelectorAll(".outlet").forEach(box => box.classList.remove("selected"));
+            outletBox.classList.add("selected");
+            displayOutletOnMap(outlet);
+
+            const marker = markers[outlet.id];
             if (marker) {
                 marker.fire('click');
             } else {
-                console.error('Marker not found for outlet:', outletId);
+                console.error('Marker not found for outlet:', outlet.id);
             }
+        };
+
+        const displayOutletOnMap = (outlet) => {
+            map.setView([outlet.latitude, outlet.longitude], 11);
+            markers.forEach(marker => {
+                if (marker.getLatLng().lat === outlet.latitude && marker.getLatLng().lng === outlet.longitude) {
+                    marker.openPopup();
+                }
+            });
         };
 
         const filterOutlets = (searchText) => {
@@ -294,6 +314,9 @@
         };
 
         const initializeCarousel = (element) => {
+            if ($(element).hasClass('slick-initialized')) {
+                $(element).slick('unslick');
+            }
             $(element).slick({
                 dots: true,
                 appendDots: $(".slick-slider-dots"),
@@ -325,6 +348,7 @@
         });
 
         getOutlets();
+
     </script>
 </body>
 
