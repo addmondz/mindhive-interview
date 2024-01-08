@@ -5,79 +5,326 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outlet Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
-        #map {
-            height: 80vh;
-            width: 100%;
-            margin-top: 20px;
-        }
-
+        html,
         body {
-            font-family: Arial, sans-serif;
+            height: 100vh;
+            /* font-family: Arial, sans-serif; */
             margin: 0;
             padding: 0;
             background-color: #f4f4f4;
+            background-color: #DFE6F0;
             color: #333;
             line-height: 1.6;
-        }
-
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .container {
-            width: 80%;
-            margin: auto;
             overflow: hidden;
+            font-family: Futura;
+        }
+
+        .header,
+        .slider-contreol-container,
+        .footer {
+            max-width: 1550px;
+            margin: auto;
+        }
+
+        .header {
+            height: 10vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .body {
+            height: 60vh;
         }
 
         .footer {
+            padding: 40px;
+        }
+
+        .outlet-container {
+            height: 100%;
+            display: flex;
+        }
+
+        .outlet {
+            width: 400px;
+            height: 200px;
+            background: #fff;
+            border-radius: 15px;
+            opacity: 1;
+            border: 1px solid #ead2b733;
+            display: inline-block;
+            flex-shrink: 0;
+            margin-right: 20px;
+        }
+
+        .outlet .inner {
+            padding: 30px;
+        }
+
+        .outlet .inner .outlet-name {
             text-align: center;
-            padding: 20px 0;
-            background-color: #333;
+            display: block;
+        }
+
+        .outlet .inner .outlet-address {
+            font-size: 14px;
+        }
+
+        .outlet.selected {
+            background-color: #f03;
             color: #fff;
+        }
+
+        .center-all-css {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slider-contreol-container {
+            position: absolute;
+            width: 100%;
+            bottom: 20px;
+        }
+
+        .action-arrow {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .slick-slider-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slick-slider-dots ul {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .slick-slider-dots ul li button {
+            background: grey;
+            height: 8px;
+            width: 10px;
+            overflow: hidden;
+            color: grey;
+            border: none;
+            border-radius: 4px;
+            padding: 0;
+        }
+
+        .slick-slider-dots ul li button:hover {
+            cursor: pointer;
+        }
+
+        .slick-slider-dots ul li.slick-active button {
+            background: orange;
+            color: orange;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .slick-slider-dots ul li button {
+                width: 10px;
+            }
+
+            .slick-slider-dots ul li {
+                margin: 4px 4px 10px 4px;
+            }
+        }
+
+        .slick-slider-dots .slick-dots {
+            position: unset !important;
+        }
+
+        .slick-dots li button:before {
+            display: none !important;
+        }
+
+        .slick-slider-dots ul li.slick-active button {
+            width: 20px;
+        }
+
+        #map {
+            height: 55vh;
+            width: 100%;
+        }
+
+        #searchInput,
+        #clearButton {
+            padding: 10px;
+        }
+
+        #clearButton {
+            margin-left: -5px;
+        }
+
+        .search-container {
+            text-align: center;
+            margin-top: -20px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
-    <h1>Outlet Locations</h1>
-    <div id="map"></div>
+    <div class="header">
+        <h1>Outlet Locations</h1>
+    </div>
+    <div id="map" class="body"></div>
+    <div class="footer">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search outlets">
+            <button id="clearButton" class="clear-button">&times;</button>
+        </div>
+        <div class="outlet-container" id="outletCarousel"></div>
+        <div class="center-all-css slider-contreol-container">
+            <div class="action-arrow btn-prev">
+                <svg id="logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <g id="Group_650" data-name="Group 650" transform="translate(4.001 9.5)">
+                        <path id="Vector" d="M2.56,5.12,0,2.56,2.56,0" fill="none" stroke="#e89c49"
+                            stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+                        <path id="Vector-2" data-name="Vector" d="M10.17,0H0" transform="translate(0.07 2.56)"
+                            fill="none" stroke="#e89c49" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="1.5" />
+                    </g>
+                    <path id="Vector-3" data-name="Vector" d="M0,16A7.651,7.651,0,0,0,8,8,7.651,7.651,0,0,0,0,0"
+                        transform="translate(12.24 4)" fill="none" stroke="#e89c49" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="1.5" />
+                    <path id="Vector-4" data-name="Vector" d="M0,24H24V0H0Z" fill="none" opacity="0" />
+                </svg>
+            </div>
+            <div class="slick-slider-dots"></div>
+            <div class="action-arrow btn-next">
+                <svg id="logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <g id="Group_650" data-name="Group 650" transform="translate(9.76 9.5)" opacity="0.999">
+                        <path id="Vector" d="M0,5.12,2.56,2.56,0,0" transform="translate(7.68)" fill="none"
+                            stroke="#f59831" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+                        <path id="Vector-2" data-name="Vector" d="M0,0H10.17" transform="translate(0 2.56)" fill="none"
+                            stroke="#f59831" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+                    </g>
+                    <path id="Vector-3" data-name="Vector" d="M8,16A7.651,7.651,0,0,1,0,8,7.651,7.651,0,0,1,8,0"
+                        transform="translate(3.76 4)" fill="none" stroke="#f59831" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="1.5" />
+                    <path id="Vector-4" data-name="Vector" d="M0,0H24V24H0Z" transform="translate(24 24) rotate(180)"
+                        fill="none" opacity="0" />
+                </svg>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     <script>
-        // Initialize the map
-        var map = L.map('map').setView([2.189751, 102.252619], 11); // Set initial view to a specific location and zoom level
-
-        // Load and add the tile layer - the visual layout of the map
+        const map = L.map('map').setView([2.189751, 102.252619], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Map data © OpenStreetMap contributors'
         }).addTo(map);
 
-        // Function to add a marker for each outlet
-        function addOutlets(outlets) {
-            outlets.forEach(function (outlet) {
-                var marker = L.marker([parseFloat(outlet.latitude), parseFloat(outlet.longitude)]).addTo(map);
+        let outletsData = [];
+        const outletMarkers = {};
+
+        const getOutlets = () => {
+            fetch('/outlets')
+                .then(response => response.json())
+                .then(data => {
+                    outletsData = data;
+                    addOutlets(data);
+                    addOutletsToCarousel(data);
+                })
+                .catch(error => console.error('Error:', error));
+        };
+
+        const addOutlets = (outlets) => {
+            outlets.forEach(outlet => {
+                const marker = L.marker([outlet.latitude, outlet.longitude]).addTo(map);
                 marker.bindPopup(`<b>${outlet.name}</b><br>${outlet.address}`);
 
-                // Draw a 5km radius circle around the outlet
-                var circle = L.circle([parseFloat(outlet.latitude), parseFloat(outlet.longitude)], {
+                // Store the marker in the global object
+                outletMarkers[outlet.id] = marker;
+
+                L.circle([outlet.latitude, outlet.longitude], {
                     color: 'red',
                     fillColor: '#f03',
                     fillOpacity: 0.5,
                     radius: 5000
                 }).addTo(map);
             });
-        }
+        };
 
-        // Fetch outlet data from your Flask API
-        fetch('/outlets')
-            .then(response => response.json())
-            .then(addOutlets)
-            .catch(error => console.error('Error:', error));
+        const addOutletsToCarousel = (outlets) => {
+            const outletCarousel = document.getElementById("outletCarousel");
+
+            // Clear the carousel content and reinitialize if needed
+            outletCarousel.innerHTML = '';
+            outlets.forEach(outlet => {
+                const outletBox = document.createElement("div");
+                outletBox.className = "outlet";
+                outletBox.id = outlet.id;
+                outletBox.innerHTML = `<div class="inner"><b class="outlet-name">${outlet.name}</b><br><span class="outlet-address">${outlet.address}</span></div>`;
+                outletBox.addEventListener("click", () => selectOutlet(outlet.id));
+                outletCarousel.appendChild(outletBox);
+            });
+            initializeCarousel(outletCarousel);
+        };
+
+        const selectOutlet = (outletId) => {
+            const marker = outletMarkers[outletId];
+            if (marker) {
+                marker.fire('click');
+            } else {
+                console.error('Marker not found for outlet:', outletId);
+            }
+        };
+
+        const filterOutlets = (searchText) => {
+            const filteredOutlets = outletsData.filter(outlet =>
+                outlet.name.toLowerCase().includes(searchText.toLowerCase())
+            );
+            addOutletsToCarousel(filteredOutlets);
+        };
+
+        const initializeCarousel = (element) => {
+            $(element).slick({
+                dots: true,
+                appendDots: $(".slick-slider-dots"),
+                infinite: false,
+                slidesToScroll: 3,
+                variableWidth: true,
+                slidesToShow: 4,
+                prevArrow: $(".action-arrow.btn-prev"),
+                nextArrow: $(".action-arrow.btn-next"),
+                responsive: [{
+                    breakpoint: 600,
+                    settings: {
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                        dots: false,
+                    },
+                }],
+            });
+        };
+
+        document.getElementById("searchInput").addEventListener("input", (event) => {
+            filterOutlets(event.target.value);
+        });
+
+        document.getElementById("clearButton").addEventListener("click", () => {
+            document.getElementById("searchInput").value = "";
+            filterOutlets("");
+            getOutlets();
+        });
+
+        getOutlets();
     </script>
 </body>
 
