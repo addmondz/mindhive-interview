@@ -292,9 +292,11 @@
 
         const addOutlets = (outlets) => {
             outlets.forEach(outlet => {
-                const marker = L.marker([outlet.latitude, outlet.longitude]).addTo(map);
+                const marker = L.marker([outlet.latitude, outlet.longitude], { id: outlet.id }).addTo(map);
                 marker.bindPopup(`<b>${outlet.name}</b><br><br>${outlet.address}`);
-                markers.push(marker);
+
+                // Insert marker at a specific index (e.g., index 2)
+                markers.splice(outlet.id, 0, marker);
 
                 L.circle([outlet.latitude, outlet.longitude], {
                     color: 'red',
@@ -346,6 +348,10 @@
             initializeCarousel(outletCarousel);
         };
 
+        const findMarkerById = (id) => {
+            return markers.find(marker => marker.options.id === id);
+        };
+
         const selectOutlet = (outlet, outletBox) => {
             document.querySelectorAll(".outlet").forEach(box => box.classList.remove("selected"));
             outletBox.classList.add("selected");
@@ -355,7 +361,8 @@
 
             displayOutletOnMap(outlet);
 
-            const marker = markers[outlet.id];
+            // const marker = markers[outlet.id];
+            const marker = findMarkerById(outlet.id);
             if (marker) {
                 marker.fire('click');
             } else {
