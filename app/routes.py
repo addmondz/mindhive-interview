@@ -14,7 +14,8 @@ def get_outlets():
         'name': outlet.name,
         'address': outlet.address,
         'latitude': outlet.latitude,
-        'longitude': outlet.longitude
+        'longitude': outlet.longitude,
+        'state': outlet.state
     } for outlet in outlets])
 
 @app.route('/outlet', methods=['POST'])

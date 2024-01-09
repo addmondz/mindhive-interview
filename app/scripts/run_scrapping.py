@@ -1,5 +1,5 @@
 from app import app
-from app.utils import scrape_outlets, get_geocode, save_outlets_to_db
+from app.utils import scrape_outlets, get_geocode, save_outlets_to_db, scrape_states, save_state_to_db_old
 import os
 from dotenv import load_dotenv
 
@@ -10,25 +10,20 @@ def main():
         # Define a list of URLs to scrape
         urls_to_scrape = [
             "https://zuscoffee.com/category/store/melaka",
-
-            # can even add other URLs like below / create another scraping to get the states
-            # "https://zuscoffee.com/category/store/perlis",
-            # "https://zuscoffee.com/category/store/kedah",
-            # "https://zuscoffee.com/category/store/penang",
-            # "https://zuscoffee.com/category/store/kelantan",
-            # "https://zuscoffee.com/category/store/terengganu",
-            # "https://zuscoffee.com/category/store/perak",
         ]
         
         api_key = os.environ.get("API_KEY")
         
         for url in urls_to_scrape:
-            for name, address in scrape_outlets(url):
-                lat, lon = get_geocode(address, api_key)
-                if lat and lon:
-                    save_outlets_to_db(name, address, lat, lon)
-                else:
-                    print("Coordinates not found for the given address.")
+            
+            for state_url, state_name  in scrape_states(url):
+                save_state_to_db_old(state_name, state_url)
+                for name, address in scrape_outlets(state_url):
+                    lat, lon = get_geocode(address, api_key)
+                    if lat and lon:
+                        save_outlets_to_db(name, address, lat, lon, state_name)
+                    else:
+                        print("Coordinates not found for the given address.")
 
 if __name__ == "__main__":
     main()

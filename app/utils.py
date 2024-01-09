@@ -2,34 +2,58 @@ import requests
 from bs4 import BeautifulSoup
 from geopy.geocoders import Nominatim
 from app import app, db  # Import your Flask app and SQLAlchemy instance
-from app.models import Outlet  # Import your Outlet model
+from app.models import Outlet, State
 
 
 def scrape_outlets(url):
     outlets = []
 
-    while url:
-        response = requests.get(url)
-        html_content = response.text  # Save the original HTML content
+    response = requests.get(url)
+    html_content = response.text  # Save the original HTML content
 
-        # Write the HTML content to a file
-        with open('scrapped.html', 'a', encoding='utf-8') as html_file:
-            html_file.write(html_content)
+    # Write the HTML content to a file
+    with open('scrapped.html', 'a', encoding='utf-8') as html_file:
+        html_file.write(html_content)
 
-        soup = BeautifulSoup(html_content, 'html.parser')
+    soup = BeautifulSoup(html_content, 'html.parser')
 
-        for outlet in soup.find_all('div', class_='elementor-element-a5ba7a6'):
-            lines = outlet.text.strip().split('\n')
-            cleaned_lines = [line.strip() for line in lines if line.strip()]
+    for outlet in soup.find_all('div', class_='elementor-element-a5ba7a6'):
+        lines = outlet.text.strip().split('\n')
+        cleaned_lines = [line.strip() for line in lines if line.strip()]
 
-            if len(cleaned_lines) >= 2:
-                address, name = cleaned_lines[:2]
-                outlets.append((name, address))
-
-        next_page = soup.find('a', {'rel': 'next'})
-        url = next_page['href'] if next_page else None
+        if len(cleaned_lines) >= 2:
+            address, name = cleaned_lines[:2]
+            outlets.append((name, address))
 
     return outlets
+
+
+def scrape_states(url):
+    state = []
+
+    response = requests.get(url)
+    html_content = response.text
+
+    with open('scrapped.html', 'a', encoding='utf-8') as html_file:
+        html_file.write(html_content)
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    element_with_id = soup.find(id="menu-1-a75b5b2")
+
+    if element_with_id:
+        print("Element with id 'menu-1-a75b5b2' found:")
+
+        state_links = element_with_id.find_all('ul', class_='sub-menu')
+
+        for ul in state_links:
+            state_items = ul.find_all('li')
+            for item in state_items:
+                state_link = item.find('a')['href']
+                state_name = item.find('a').text
+                state.append((state_link, state_name))
+
+    return state
 
 
 def get_geocode(address, api_key):
@@ -65,11 +89,11 @@ def save_outlets_to_db_old(name, address, latitude, longitude):
     if existing_outlet:
         # If it exists, check if the details are different before updating
         if (existing_outlet.address != address):
-            print('Address not same')
+            print('Address is different')
         if (existing_outlet.latitude != latitude):
-            print('latitude not same')
+            print('latitude is different')
         if (existing_outlet.longitude != longitude):
-            print('longitude not same')
+            print('longitude is different')
             print(f"old long: {existing_outlet.longitude}")
             print(f"new long: {longitude}")
 
@@ -93,11 +117,38 @@ def save_outlets_to_db_old(name, address, latitude, longitude):
     db.session.commit()
 
 
-def save_outlets_to_db(name, address, latitude, longitude):
-    existing_outlet = Outlet.query.filter_by(name=name).first()
+def save_state_to_db_old(name, url):
+    existing_data = State.query.filter_by(name=name).first()
+
+    if existing_data:
+        if (existing_data.name != name):
+            print('Name is different')
+        if (existing_data.url != url):
+            print('Url is different')
+
+        if (existing_data.name != name or existing_data.url != url):
+
+            existing_data.name = name
+            existing_data.url = url
+            print(f"State updated: {existing_data.name}")
+
+    else:
+        # If it doesn't exist, insert a new record
+        state = State(name=name, url=url)
+        db.session.add(state)
+        print(f"State created: {state.name}")
+
+    db.session.commit()
+
+
+def save_outlets_to_db(name, address, latitude, longitude, state):
+    existing_outlet = Outlet.query.filter_by(name=name, state=state).first()
 
     if existing_outlet:
         changes = {}
+
+        if existing_outlet.address != address:
+            changes["Address"] = (existing_outlet.address, address)
 
         if existing_outlet.address != address:
             changes["Address"] = (existing_outlet.address, address)
@@ -120,8 +171,8 @@ def save_outlets_to_db(name, address, latitude, longitude):
 
     else:
         outlet = Outlet(name=name, address=address,
-                        latitude=latitude, longitude=longitude)
+                        latitude=latitude, longitude=longitude, state=state)
         db.session.add(outlet)
-        print(f"New Outlet: {outlet.name}")
+        print(f"New Outlet: {outlet.name}, State: {outlet.state}")
 
     db.session.commit()
