@@ -13,7 +13,6 @@
         html,
         body {
             height: 100vh;
-            /* font-family: Arial, sans-serif; */
             margin: 0;
             padding: 0;
             background-color: #f4f4f4;
@@ -53,7 +52,7 @@
 
         .outlet {
             width: 400px;
-            height: 200px;
+            height: 150px;
             background: #fff;
             border-radius: 15px;
             opacity: 1;
@@ -64,16 +63,29 @@
         }
 
         .outlet .inner {
-            padding: 30px;
+            padding: 20px 30px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 40px);
+
         }
 
         .outlet .inner .outlet-name {
             text-align: center;
             display: block;
+            flex: 1;
+            font-weight: 500;
         }
 
         .outlet .inner .outlet-address {
-            font-size: 14px;
+            font-size: 12px;
+            text-align: center;
+            display: block;
+            flex: 1;
+        }
+
+        .outlet .inner .middle-space {
+            flex: 1;
         }
 
         .outlet.selected {
@@ -89,8 +101,8 @@
 
         .slider-contreol-container {
             position: absolute;
-            width: 100%;
-            bottom: 20px;
+            width: calc(100% - 80px);
+            bottom: 0;
         }
 
         .action-arrow {
@@ -131,6 +143,10 @@
             color: orange;
         }
 
+        .page-count {
+            display: none;
+        }
+
         @media only screen and (max-width: 600px) {
             .slick-slider-dots ul li button {
                 width: 10px;
@@ -138,6 +154,26 @@
 
             .slick-slider-dots ul li {
                 margin: 4px 4px 10px 4px;
+            }
+
+            .slick-slider-dots {
+                display: none;
+            }
+
+            .page-count {
+                display: block;
+            }
+
+            .footer {
+                padding: 40px 10px;
+            }
+
+            .outlet {
+                width: 355px;
+            }
+
+            .slider-contreol-container {
+                width: calc(100% - 20px);
             }
         }
 
@@ -203,6 +239,7 @@
                 </svg>
             </div>
             <div class="slick-slider-dots"></div>
+            <div><span id="current-page" class="page-count">1/1</div>
             <div class="action-arrow btn-next">
                 <svg id="logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                     <g id="Group_650" data-name="Group 650" transform="translate(9.76 9.5)" opacity="0.999">
@@ -247,7 +284,7 @@
         const addOutlets = (outlets) => {
             outlets.forEach(outlet => {
                 const marker = L.marker([outlet.latitude, outlet.longitude]).addTo(map);
-                marker.bindPopup(`<b>${outlet.name}</b><br>${outlet.address}`);
+                marker.bindPopup(`<b>${outlet.name}</b><br><br>${outlet.address}`);
                 markers.push(marker);
 
                 L.circle([outlet.latitude, outlet.longitude], {
@@ -256,6 +293,22 @@
                     fillOpacity: 0.5,
                     radius: 5000
                 }).addTo(map);
+            });
+        };
+
+        const removeAllMarkers = () => {
+            markers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+
+            // Clear the markers array
+            markers.length = 0;
+
+            // Loop through and remove circle markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Circle) {
+                    map.removeLayer(layer);
+                }
             });
         };
 
@@ -275,7 +328,7 @@
                 const outletBox = document.createElement("div");
                 outletBox.className = "outlet";
                 outletBox.id = outlet.id;
-                outletBox.innerHTML = `<div class="inner"><b class="outlet-name">${outlet.name}</b><br><span class="outlet-address">${outlet.address}</span></div>`;
+                outletBox.innerHTML = `<div class="inner"><div class="outlet-name">${outlet.name}</div><div class="middle-space"></div><div class="outlet-address">${outlet.address}</div></div>`;
                 outletBox.addEventListener("click", () => selectOutlet(outlet, outletBox));
                 outletCarousel.appendChild(outletBox);
             });
@@ -287,6 +340,10 @@
         const selectOutlet = (outlet, outletBox) => {
             document.querySelectorAll(".outlet").forEach(box => box.classList.remove("selected"));
             outletBox.classList.add("selected");
+
+            // Find the index of the selected outlet in the filtered data
+            const currentIndex = outletsData.findIndex(item => item.id === outlet.id);
+
             displayOutletOnMap(outlet);
 
             const marker = markers[outlet.id];
@@ -295,6 +352,9 @@
             } else {
                 console.error('Marker not found for outlet:', outlet.id);
             }
+
+            // Update the page number
+            updatePageNumber();
         };
 
         const displayOutletOnMap = (outlet) => {
@@ -310,6 +370,7 @@
             const filteredOutlets = outletsData.filter(outlet =>
                 outlet.name.toLowerCase().includes(searchText.toLowerCase())
             );
+
             addOutletsToCarousel(filteredOutlets);
         };
 
@@ -331,10 +392,17 @@
                     settings: {
                         slidesToShow: 1,
                         slidesToScroll: 1,
-                        dots: false,
                     },
                 }],
             });
+
+            // Add an event listener to update the current page number when the carousel changes
+            $(element).on('afterChange', function (event, slick, currentSlide) {
+                updatePageNumber();
+            });
+
+            // Update the initial page number
+            updatePageNumber();
         };
 
         document.getElementById("searchInput").addEventListener("input", (event) => {
@@ -344,9 +412,25 @@
         document.getElementById("clearButton").addEventListener("click", () => {
             document.getElementById("searchInput").value = "";
             filterOutlets("");
+            removeAllMarkers();
             getOutlets();
         });
 
+        const updatePageNumber = () => {
+            var totalSlides = $('.slick-slider-dots ul li').length;
+            var currentPage = $('.slick-slider-dots ul li.slick-active button').html();
+            if (totalSlides == 0) {
+                currentPage = 0;
+            }
+
+            var outletCount = $('.outlet .inner').length;
+
+            if (outletCount == 1) {
+                totalSlides = 1;
+                currentPage = 1;
+            }
+            document.getElementById('current-page').textContent = currentPage + '/' + totalSlides;
+        };
         getOutlets();
 
     </script>
