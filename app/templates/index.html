@@ -271,31 +271,44 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     <script>
-        const map = L.map('map').setView([2.189751, 102.252619], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data © OpenStreetMap contributors'
-        }).addTo(map);
+        // Define Constants
+        const INITIAL_MAP_CENTER = [2.189751, 102.252619];
+        const OUTLETS_API_URL = '/outlets';
 
+        let map;
         let outletsData = [];
         const markers = [];
 
-        const getOutlets = () => {
-            fetch('/outlets')
-                .then(response => response.json())
+        // Function to initialize the map
+        function initializeMap() {
+            map = L.map('map').setView(INITIAL_MAP_CENTER, 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data © OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        // Function to fetch outlets data
+        function fetchOutlets() {
+            fetch(OUTLETS_API_URL)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data: ${response.status} - ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     outletsData = data;
                     addOutlets(data);
                     addOutletsToCarousel(data);
                 })
-                .catch(error => console.error('Error:', error));
-        };
+                .catch(error => console.error('Error:', error.message));
+        }
 
-        const addOutlets = (outlets) => {
+        // Function to add outlets to the map
+        function addOutlets(outlets) {
             outlets.forEach(outlet => {
                 const marker = L.marker([outlet.latitude, outlet.longitude], { id: outlet.id }).addTo(map);
                 marker.bindPopup(`<b>${outlet.name}</b><br><br>${outlet.address}`);
-
-                // Insert marker at a specific index (e.g., index 2)
                 markers.splice(outlet.id, 0, marker);
 
                 L.circle([outlet.latitude, outlet.longitude], {
@@ -305,9 +318,10 @@
                     radius: 5000
                 }).addTo(map);
             });
-        };
+        }
 
-        const removeAllMarkers = () => {
+        // Function to remove all markers and circle markers from the map
+        function removeAllMarkers() {
             markers.forEach(marker => {
                 map.removeLayer(marker);
             });
@@ -315,18 +329,36 @@
             // Clear the markers array
             markers.length = 0;
 
-            // Loop through and remove circle markers
+            // Remove circle markers
             map.eachLayer(layer => {
                 if (layer instanceof L.Circle) {
                     map.removeLayer(layer);
                 }
             });
-        };
+        }
 
-        const addOutletsToCarousel = (outlets) => {
+        // Function to add outlets to the carousel
+        function addOutletsToCarousel(outlets) {
             const outletCarousel = document.getElementById("outletCarousel");
 
-            // Destroy the existing carousel if it's already initialized
+            const carouselOptions = {
+                dots: true,
+                appendDots: $(".slick-slider-dots"),
+                infinite: false,
+                slidesToScroll: 3,
+                variableWidth: true,
+                slidesToShow: 4,
+                prevArrow: $(".action-arrow.btn-prev"),
+                nextArrow: $(".action-arrow.btn-next"),
+                responsive: [{
+                    breakpoint: 600,
+                    settings: {
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                    },
+                }],
+            };
+
             if ($(outletCarousel).hasClass('slick-initialized')) {
                 $(outletCarousel).slick('unslick');
             }
@@ -345,14 +377,24 @@
             });
 
             // Reinitialize the carousel
-            initializeCarousel(outletCarousel);
-        };
+            $(outletCarousel).slick(carouselOptions);
 
-        const findMarkerById = (id) => {
+            // Add an event listener to update the current page number when the carousel changes
+            $(outletCarousel).on('afterChange', function (event, slick, currentSlide) {
+                updatePageNumber();
+            });
+
+            // Update the initial page number
+            updatePageNumber();
+        }
+
+        // Function to find a marker by ID
+        function findMarkerById(id) {
             return markers.find(marker => marker.options.id === id);
-        };
+        }
 
-        const selectOutlet = (outlet, outletBox) => {
+        // Function to select an outlet
+        function selectOutlet(outlet, outletBox) {
             document.querySelectorAll(".outlet").forEach(box => box.classList.remove("selected"));
             outletBox.classList.add("selected");
 
@@ -361,7 +403,6 @@
 
             displayOutletOnMap(outlet);
 
-            // const marker = markers[outlet.id];
             const marker = findMarkerById(outlet.id);
             if (marker) {
                 marker.fire('click');
@@ -371,68 +412,37 @@
 
             // Update the page number
             updatePageNumber();
-        };
+        }
 
-        const displayOutletOnMap = (outlet) => {
+        // Function to display an outlet on the map
+        function displayOutletOnMap(outlet) {
             map.setView([outlet.latitude, outlet.longitude], 11);
             markers.forEach(marker => {
                 if (marker.getLatLng().lat === outlet.latitude && marker.getLatLng().lng === outlet.longitude) {
                     marker.openPopup();
                 }
             });
-        };
+        }
 
-        const filterOutlets = (searchText) => {
+        // Function to filter outlets based on search input
+        function filterOutlets(searchText) {
             const filteredOutlets = outletsData.filter(outlet =>
                 outlet.name.toLowerCase().includes(searchText.toLowerCase())
             );
 
             addOutletsToCarousel(filteredOutlets);
-        };
+        }
 
-        const initializeCarousel = (element) => {
-            if ($(element).hasClass('slick-initialized')) {
-                $(element).slick('unslick');
-            }
-            $(element).slick({
-                dots: true,
-                appendDots: $(".slick-slider-dots"),
-                infinite: false,
-                slidesToScroll: 3,
-                variableWidth: true,
-                slidesToShow: 4,
-                prevArrow: $(".action-arrow.btn-prev"),
-                nextArrow: $(".action-arrow.btn-next"),
-                responsive: [{
-                    breakpoint: 600,
-                    settings: {
-                        slidesToShow: 1,
-                        slidesToScroll: 1,
-                    },
-                }],
-            });
-
-            // Add an event listener to update the current page number when the carousel changes
-            $(element).on('afterChange', function (event, slick, currentSlide) {
-                updatePageNumber();
-            });
-
-            // Update the initial page number
-            updatePageNumber();
-        };
-
-        document.getElementById("searchInput").addEventListener("input", (event) => {
-            filterOutlets(event.target.value);
-        });
-
-        document.getElementById("clearButton").addEventListener("click", () => {
+        // Function to clear search input
+        function clearSearchInput() {
             document.getElementById("searchInput").value = "";
             filterOutlets("");
             removeAllMarkers();
-            getOutlets();
-        });
+            fetchOutlets();
+        }
 
-        const updatePageNumber = () => {
+        // Function to update the current page number
+        function updatePageNumber() {
             var totalSlides = $('.slick-slider-dots ul li').length;
             var currentPage = $('.slick-slider-dots ul li.slick-active button').html();
             if (totalSlides == 0) {
@@ -446,8 +456,20 @@
                 currentPage = 1;
             }
             document.getElementById('current-page').textContent = currentPage + '/' + totalSlides;
-        };
-        getOutlets();
+        }
+
+        // Event Listeners
+        document.getElementById("searchInput").addEventListener("input", (event) => {
+            filterOutlets(event.target.value);
+        });
+
+        document.getElementById("clearButton").addEventListener("click", () => {
+            clearSearchInput();
+        });
+
+        // Initialize the map and fetch initial data
+        initializeMap();
+        fetchOutlets();
 
     </script>
 </body>
