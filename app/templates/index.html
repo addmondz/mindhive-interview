@@ -147,6 +147,11 @@
             display: none;
         }
 
+        #map {
+            height: 55vh;
+            width: 100%;
+        }
+
         @media only screen and (max-width: 600px) {
             .slick-slider-dots ul li button {
                 width: 10px;
@@ -175,6 +180,15 @@
             .slider-contreol-container {
                 width: calc(100% - 20px);
             }
+
+            html,
+            body {
+                overflow: scroll;
+            }
+
+            #map {
+                height: 40vh;
+            }
         }
 
         .slick-slider-dots .slick-dots {
@@ -187,11 +201,6 @@
 
         .slick-slider-dots ul li.slick-active button {
             width: 20px;
-        }
-
-        #map {
-            height: 55vh;
-            width: 100%;
         }
 
         #searchInput,
